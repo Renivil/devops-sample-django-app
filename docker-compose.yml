@@ -1,0 +1,47 @@
+services:
+
+  db:
+    image: postgres:14
+    restart: always
+    container_name: db
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_USER: worker
+      POSTGRES_PASSWORD: worker
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - mynetwork
+
+  web:
+    build: .
+    container_name: app
+    restart: always
+    environment:
+      DJANGO_DB_HOST: 'db'
+      DJANGO_DB_NAME: 'app'
+      DJANGO_DB_USER: 'worker'
+      DJANGO_DB_PASS: 'worker'
+      DJANGO_DB_PORT: '5432'
+      DJANGO_DEBUG: 'False'
+      PYTHONUNBUFFERED: '1'
+    volumes:
+      - app:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    command: ["uwsgi", "--http", ":8000","--wsgi-file","parrotsite/wsgi.py"]
+    networks:
+      - mynetwork
+
+networks:
+  mynetwork:
+    name: mynetwork
+    driver: bridge
+    attachable: true
+
+volumes:
+  postgres_data:
+  app:
+
